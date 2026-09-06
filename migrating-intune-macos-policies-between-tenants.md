@@ -1,14 +1,14 @@
 # Migrating macOS Configuration Policies Between Intune Tenants: A Practical Guide
 
-If you've ever been handed a folder of JSON files from another Intune tenant and told "just import these," you've probably discovered it's not as simple as it sounds. Intune's built-in **Import policy** feature only supports one specific policy type and format — everything else needs a bit of engineering. This article walks through the problem, why it happens, and working PowerShell scripts to solve it.
+If you've ever been handed a folder of JSON files from another Intune tenant and told "just import these," you have probably discovered it's not as simple as it sounds. Intune's built-in **Import policy** feature only supports one specific policy type and format everything else needs a bit of engineering. This article walks through the problem, why it happens, and working PowerShell scripts to solve it.
 
 ## The Problem
 
-When you export device configuration policies from Intune — whether through the Graph API directly, or a third-party tool like [IntuneManagement](https://github.com/Micke-K/IntuneManagement) — you get JSON files. Naturally, you'd expect Intune's own **Create → Import policy** button to accept them back in. It doesn't, for two reasons.
+When you export device configuration policies from Intune — whether through the Graph API directly, or a third-party tool like [IntuneManagement](https://github.com/Micke-K/IntuneManagement) you get JSON files. Naturally, you would expect Intune's own **Create → Import policy** button to accept them back in. It does not, for two reasons.
 
 ### 1. Not all policy types are importable
 
-The Import policy button in the Intune portal only supports **Settings Catalog** policies (`#microsoft.graph.deviceManagementConfigurationPolicy`). If your export folder contains a mix of policy types — which is normal for any real macOS device management setup — most of them will simply be rejected:
+The Import policy button in the Intune portal only supports **Settings Catalog** policies (`#microsoft.graph.deviceManagementConfigurationPolicy`). If your export folder contains a mix of policy types which is normal for any real macOS device management setup — most of them will simply be rejected:
 
 | Policy type | Import policy button supports it? |
 |---|---|
@@ -21,11 +21,11 @@ The Import policy button in the Intune portal only supports **Settings Catalog**
 
 ### 2. Even Settings Catalog exports can fail
 
-If your JSON came from a raw Graph API export (rather than the portal's own **Export JSON** button), it usually contains extra metadata the importer doesn't expect: OData annotations (`@odata.id`, `@odata.editLink`, `children@odata.type`), read-only fields like `createdDateTime`, and sometimes UTF-16 encoding instead of UTF-8. The result is a generic, unhelpful error: *"There was an issue importing the policy, please try again."* Retrying doesn't help — the file needs reshaping first.
+If your JSON came from a raw Graph API export (rather than the portal's own **Export JSON** button), it usually contains extra metadata the importer doesn't expect: OData annotations (`@odata.id`, `@odata.editLink`, `children@odata.type`), read-only fields like `createdDateTime`, and sometimes UTF-16 encoding instead of UTF-8. The result is a generic, unhelpful error: *"There was an issue importing the policy, please try again."* Retrying doesn't help the file needs reshaping first.
 
 ## Step 1: Work Out What You're Actually Dealing With
 
-Before converting anything, sort your files by type. This single script reads every JSON file in a folder and prints its Graph `@odata.type`, so you know exactly what you're working with:
+Before converting anything, sort your files by type. This single script reads every JSON file in a folder and prints its Graph `@odata.type`, so you know exactly what you are working with:
 
 ```powershell
 Get-ChildItem "C:\PolicyExport\*.json" | ForEach-Object {
@@ -41,7 +41,7 @@ Get-ChildItem "C:\PolicyExport\*.json" | ForEach-Object {
 } | Sort-Object Type | Format-Table -AutoSize
 ```
 
-This handles both UTF-16 and UTF-8 automatically (the `try/catch` falls back if the first encoding guess fails) and gives you a clean breakdown — for example, a mix of Settings Catalog policies, a handful of Custom profiles, and maybe one VPN or Wi-Fi config.
+This handles both UTF-16 and UTF-8 automatically (the `try/catch` falls back if the first encoding guess fails) and gives you a clean breakdown for example, a mix of Settings Catalog policies, a handful of Custom profiles, and maybe one VPN or Wi-Fi config.
 
 ## Step 2: Extract Custom Profiles (.mobileconfig)
 
@@ -75,7 +75,7 @@ Once extracted, upload each `.mobileconfig` via **Devices → macOS → Configur
 
 ## Step 3: Convert Settings Catalog Policies for the Import Button
 
-This is the type the portal *can* import — but only if the JSON matches the exact shape Intune's own export produces. A raw Graph export needs its OData annotations stripped first. This script does that recursively, regardless of how deeply nested the settings structure is:
+This is the type the portal *can* import but only if the JSON matches the exact shape Intune's own export produces. A raw Graph export needs its OData annotations stripped first. This script does that recursively, regardless of how deeply nested the settings structure is:
 
 ```powershell
 function Clean-Node($node) {
