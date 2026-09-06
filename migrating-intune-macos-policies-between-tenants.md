@@ -4,7 +4,7 @@ If you've ever been handed a folder of JSON files from another Intune tenant and
 
 ## The Problem
 
-When you export device configuration policies from Intune — whether through the Graph API directly, or a third-party tool like [IntuneManagement](https://github.com/Micke-K/IntuneManagement) you get JSON files. Naturally, you would expect Intune's own **Create → Import policy** button to accept them back in. It does not, for two reasons.
+When you export device configuration policies from Intune whether through the Graph API directly, or a third-party tool like [IntuneManagement](https://github.com/Micke-K/IntuneManagement) you get JSON files. Naturally, you would expect Intune's own **Create → Import policy** button to accept them back in. It does not, for two reasons.
 
 ### 1. Not all policy types are importable
 
